@@ -28,7 +28,7 @@ The gateway server acts as a central entry point for all client requests, routin
 
 ### Prerequisites
 - Node.js >= 18.0.0
-- npm or yarn
+- Node Package Manager: yarn
 
 ### Setup
 1. Clone the repository:
@@ -39,7 +39,7 @@ The gateway server acts as a central entry point for all client requests, routin
 
 2. Install dependencies:
    ```bash
-   npm install
+   yarn install
    ```
 
 3. Configure environment variables in a `.env` file:
@@ -58,12 +58,12 @@ The gateway server acts as a central entry point for all client requests, routin
 
 Development mode with auto-restart:
 ```bash
-npm run dev
+yarn run dev
 ```
 
 Production mode:
 ```bash
-npm start
+yarn start
 ```
 
 ### Configuration

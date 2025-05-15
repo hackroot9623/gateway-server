@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gateway Metrics</title>
+    <link rel="stylesheet" href="/metrics-dashboard/css/styles.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0">
+</head>
+<body>
+    <h1>Gateway Metrics Dashboard</h1>
+    <div class="header-actions">
+        <div class="tabs">
+            <button class="tab active" data-route="all" id="tab-all">All Routes</button>
+            {{#routes}}
+            <button class="tab" data-route="{{route}}" id="tab-{{route}}">{{route}}</button>
+            {{/routes}}
+        </div>
+        <div class="refresh-section">
+            <button class="refresh-button">
+                <span class="icon material-symbols-rounded">refresh</span>
+                Refresh Metrics
+            </button>
+            <div class="last-refresh-time"></div>
+        </div>
+    </div>
+
+    <div id="content-all" class="tab-content active">
+        {{#metrics}}
+        <div class="metric-group" data-metric="{{name}}">
+            <div class="metric-name">{{name}}</div>
+            <div class="metric-help">{{help}}</div>
+            <div class="metric-type">{{type}}</div>
+            {{#hasMetrics}}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Labels</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#metrics}}
+                    <tr>
+                        <td>
+                            {{#labels}}
+                            <span class="label-pair">
+                                <span class="label-key">{{key}}</span>
+                                <span class="label-equals">=</span>
+                                <span class="label-value {{#isMethod}}method-{{value}}{{/isMethod}}">{{value}}</span>
+                            </span>
+                            {{/labels}}
+                        </td>
+                        <td class="metric-value {{statusClass}}">{{formattedValue}}</td>
+                    </tr>
+                    {{/metrics}}
+                </tbody>
+            </table>
+            {{/hasMetrics}}
+            {{^hasMetrics}}
+            <div class="no-data">No data available for this metric</div>
+            {{/hasMetrics}}
+        </div>
+        {{/metrics}}
+    </div>
+
+    {{#routes}}
+    <div id="content-{{route}}" class="tab-content">
+        {{#metrics}}
+        <div class="metric-group" data-metric="{{name}}">
+            <div class="metric-name">{{name}}</div>
+            <div class="metric-help">{{help}}</div>
+            <div class="metric-type">{{type}}</div>
+            {{#hasRouteMetrics}}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Labels</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#routeMetrics}}
+                    <tr>
+                        <td>
+                            {{#labels}}
+                            <span class="label-pair">
+                                <span class="label-key">{{key}}</span>
+                                <span class="label-equals">=</span>
+                                <span class="label-value {{#isMethod}}method-{{value}}{{/isMethod}}">{{value}}</span>
+                            </span>
+                            {{/labels}}
+                        </td>
+                        <td class="metric-value {{statusClass}}">{{formattedValue}}</td>
+                    </tr>
+                    {{/routeMetrics}}
+                </tbody>
+            </table>
+            {{/hasRouteMetrics}}
+            {{^hasRouteMetrics}}
+            <div class="no-data">No data available for this route</div>
+            {{/hasRouteMetrics}}
+        </div>
+        {{/metrics}}
+    </div>
+    {{/routes}}
+
+    <a href="/metrics" class="raw-link">View Raw Metrics</a>
+    <script src="/metrics-dashboard/js/metrics-dashboard.js"></script>
+</body>
+</html> 

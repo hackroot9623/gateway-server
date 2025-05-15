@@ -45,6 +45,7 @@
     "express-rate-limit": "^7.1.5",
     "fast-gateway": "^3.4.5",
     "helmet": "^7.1.0",
+    "mustache": "^4.2.0",
     "opossum": "^8.1.3",
     "prom-client": "^15.1.0"
   },

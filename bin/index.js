@@ -8,6 +8,9 @@ try {
     const prometheus = require('prom-client')
     const healthCheck = require('@godaddy/terminus')
     const colors = require('colors')
+    const path = require('path')
+    const fs = require('fs')
+    const MetricsHandler = require('../lib/metrics/handler')
 
     // Configure colors theme
     colors.setTheme({
@@ -212,10 +215,33 @@ try {
             cors(corsOptions),
             helmet(),
             limiter,
-
+            // Serve static files for metrics dashboard
+            (req, res, next) => {
+                if (req.url.startsWith('/metrics-dashboard/')) {
+                    const filePath = path.join(__dirname, '..', 'public', req.url);
+                    fs.readFile(filePath, (err, data) => {
+                        if (err) {
+                            next();
+                            return;
+                        }
+                        const ext = path.extname(filePath);
+                        const contentType = {
+                            '.css': 'text/css',
+                            '.js': 'application/javascript',
+                            '.html': 'text/html'
+                        }[ext] || 'text/plain';
+                        
+                        res.setHeader('Content-Type', contentType);
+                        res.end(data);
+                    });
+                    return;
+                }
+                next();
+            },
             // Prometheus metrics middleware
             (req, res, next) => {
                 const start = process.hrtime();
+                const routePrefix = config.routes.find(route => req.url.startsWith(route.prefix))?.prefix || req.url;
 
                 res.on('finish', () => {
                     const duration = process.hrtime(start);
@@ -224,7 +250,7 @@ try {
                     metrics.requestDuration.observe(
                         {
                             method: req.method,
-                            route: req.route?.path || 'unknown',
+                            route: routePrefix,
                             status_code: res.statusCode
                         },
                         durationSeconds
@@ -232,14 +258,13 @@ try {
 
                     metrics.requestTotal.inc({
                         method: req.method,
-                        route: req.route?.path || 'unknown',
+                        route: routePrefix,
                         status_code: res.statusCode
                     });
                 });
 
                 next();
             },
-
             // Logging middleware
             (req, res, next) => {
                 const serviceName = config.routes.find(route => req.url.startsWith(route.prefix))?.prefix || 'unknown';
@@ -307,6 +332,9 @@ try {
         trustProxy: true
     });
 
+    // Initialize metrics handler
+    const metricsHandler = new MetricsHandler(prometheus);
+
     // Add health check endpoint directly
     server.get('/health', async (req, res) => {
         try {
@@ -344,14 +372,7 @@ try {
     });
 
     // Expose Prometheus metrics endpoint
-    server.get('/metrics', async (req, res) => {
-        try {
-            res.set('Content-Type', prometheus.register.contentType);
-            res.end(await prometheus.register.metrics());
-        } catch (error) {
-            res.status(500).json(createErrorResponse(error, req, res));
-        }
-    });
+    server.get('/metrics', (req, res) => metricsHandler.handleMetricsRequest(req, res));
 
     server.start(port)
         .then((address) => {

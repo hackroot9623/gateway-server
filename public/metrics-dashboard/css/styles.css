@@ -1,0 +1,291 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    line-height: 1.6;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #f5f5f5;
+}
+
+h1 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+}
+
+.metric-group {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.metric-name {
+    color: #2980b9;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.metric-help {
+    color: #7f8c8d;
+    font-style: italic;
+    margin-bottom: 15px;
+}
+
+.metric-type {
+    display: inline-block;
+    padding: 3px 8px;
+    background: #e8f5e9;
+    color: #2e7d32;
+    border-radius: 4px;
+    font-size: 0.9em;
+    margin-bottom: 15px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background: white;
+}
+
+th, td {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    background: #f8f9fa;
+    color: #444;
+    font-weight: 600;
+}
+
+tr:hover {
+    background: #f8f9fa;
+}
+
+.raw-link {
+    display: inline-block;
+    padding: 8px 15px;
+    background: #3498db;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.raw-link:hover {
+    background: #2980b9;
+}
+
+.status-2xx { color: #27ae60; }
+.status-3xx { color: #f39c12; }
+.status-4xx { color: #e74c3c; }
+.status-5xx { color: #c0392b; }
+
+.label-pair {
+    display: inline-flex;
+    align-items: center;
+    background: #f0f2f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin: 2px;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.label-key {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.label-equals {
+    color: #95a5a6;
+    margin: 0 4px;
+}
+
+.label-value {
+    color: #2980b9;
+}
+
+.no-data {
+    text-align: center;
+    padding: 20px;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tabs {
+    display: flex;
+    gap: 8px;
+    padding-bottom: 0;
+    border: none;
+    flex-wrap: wrap;
+}
+
+.tab {
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    color: #666;
+    font-size: 0.95em;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.tab:hover {
+    background: #e8f4fd;
+    color: #2980b9;
+    border-color: #2980b9;
+}
+
+.tab.active {
+    background: #3498db;
+    color: white;
+    border-color: #2980b9;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.metric-value {
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-weight: 500;
+}
+
+.method-GET { color: #27ae60; }
+.method-POST { color: #2980b9; }
+.method-PUT { color: #f39c12; }
+.method-DELETE { color: #e74c3c; }
+.method-PATCH { color: #8e44ad; }
+
+.refresh-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-weight: 500;
+    transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(46, 204, 113, 0.2);
+}
+
+.refresh-button:hover {
+    background: #27ae60;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(46, 204, 113, 0.3);
+}
+
+.refresh-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(46, 204, 113, 0.2);
+}
+
+.refresh-button .icon {
+    font-size: 1.2em;
+    transition: transform 0.5s;
+}
+
+.refresh-button:hover .icon {
+    transform: rotate(180deg);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.refresh-button.refreshing .icon {
+    animation: spin 1s linear infinite;
+}
+
+.loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.refresh-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.last-refresh-time {
+    color: #7f8c8d;
+    font-size: 0.9em;
+}
+
+.error-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #e74c3c;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease-out;
+    z-index: 1000;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+} 
