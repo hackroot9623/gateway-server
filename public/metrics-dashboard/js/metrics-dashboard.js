@@ -3,12 +3,14 @@ class MetricsDashboard {
         this.currentTab = 'all';
         this.loading = false;
         this.initializeEventListeners();
+        this.lastRefreshTime = null;
     }
 
     initializeEventListeners() {
         document.addEventListener('DOMContentLoaded', () => {
             this.setupTabListeners();
             this.setupRefreshButton();
+            this.setupRowClickListeners();
             this.refreshMetrics();
         });
     }
@@ -29,6 +31,357 @@ class MetricsDashboard {
         }
     }
 
+    setupRowClickListeners() {
+        document.addEventListener('click', (e) => {
+            const row = e.target.closest('.metric-row');
+            if (row) {
+                this.toggleRowDetails(row);
+            }
+
+            // Handle copy button clicks
+            if (e.target.closest('.copy-button')) {
+                e.stopPropagation(); // Prevent row toggle
+                const button = e.target.closest('.copy-button');
+                const textToCopy = button.getAttribute('data-copy');
+                if (textToCopy) {
+                    navigator.clipboard.writeText(textToCopy)
+                        .then(() => {
+                            button.innerHTML = '<span class="material-symbols-rounded">check</span>';
+                            setTimeout(() => {
+                                button.innerHTML = '<span class="material-symbols-rounded">content_copy</span>';
+                            }, 2000);
+                        });
+                }
+            }
+        });
+    }
+
+    toggleRowDetails(row) {
+        const wasExpanded = row.classList.contains('expanded');
+        
+        // Close any other open rows
+        document.querySelectorAll('.metric-row.expanded').forEach(expandedRow => {
+            if (expandedRow !== row) {
+                expandedRow.classList.remove('expanded');
+                const details = expandedRow.nextElementSibling;
+                if (details && details.classList.contains('request-details')) {
+                    details.remove();
+                }
+            }
+        });
+
+        if (!wasExpanded) {
+            row.classList.add('expanded');
+            
+            // Extract metric data
+            const labels = Array.from(row.querySelectorAll('.label-pair')).map(pair => ({
+                key: pair.querySelector('.label-key').textContent,
+                value: pair.querySelector('.label-value').textContent
+            }));
+
+            const method = labels.find(l => l.key === 'method')?.value || '';
+            const route = labels.find(l => l.key === 'route')?.value || '';
+            const statusCode = labels.find(l => l.key === 'status_code')?.value || '';
+            const value = row.querySelector('.metric-value').textContent.trim();
+            const le = labels.find(l => l.key === 'le')?.value;
+
+            // Create details section
+            const details = document.createElement('tr');
+            details.className = 'request-details';
+            details.innerHTML = this.generateDetailsContent(method, route, statusCode, value, le, labels);
+            
+            // Insert after the clicked row
+            row.parentNode.insertBefore(details, row.nextSibling);
+            
+            // Add animation class after insertion
+            requestAnimationFrame(() => {
+                details.classList.add('visible');
+            });
+        } else {
+            row.classList.remove('expanded');
+            const details = row.nextElementSibling;
+            if (details && details.classList.contains('request-details')) {
+                details.remove();
+            }
+        }
+    }
+
+    generateDetailsContent(method, route, statusCode, value, le, labels) {
+        const methodClass = `method-${method}`;
+        const statusClass = this.getStatusClass(statusCode);
+        const duration = parseFloat(value);
+        const bucket = le ? `<= ${le}s` : 'Total';
+        
+        // Extract service name from route
+        const serviceName = route.split('/')[1];
+        
+        // Get request details if available
+        const requestDetails = labels.find(l => l.key === 'request_details')?.details;
+        
+        // Determine status type and message
+        const statusInfo = this.getStatusInfo(statusCode);
+
+        // Generate curl command with actual request details
+        const curlCommand = this.generateCurlCommand(method, route, requestDetails);
+
+        return `
+            <td colspan="2">
+                <div class="details-grid">
+                    <div class="detail-section">
+                        <h3>
+                            <span class="material-symbols-rounded">swap_horiz</span>
+                            Request Details
+                        </h3>
+                        <div class="detail-item">
+                            <span class="detail-label">Service:</span>
+                            <span class="detail-value service-name">${serviceName}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Method:</span>
+                            <span class="detail-value ${methodClass}">${method}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Endpoint:</span>
+                            <span class="detail-value endpoint-path">${route}</span>
+                            <button class="copy-button" data-copy="${route}">
+                                <span class="material-symbols-rounded">content_copy</span>
+                            </button>
+                        </div>
+                        ${this.generateHeadersList(requestDetails)}
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>
+                            <span class="material-symbols-rounded">done_all</span>
+                            Response Details
+                        </h3>
+                        <div class="detail-item">
+                            <span class="detail-label">Status:</span>
+                            <div class="status-indicator ${statusClass}">
+                                <span class="status-code">${statusCode}</span>
+                                <span class="status-text">${statusInfo.message}</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Duration:</span>
+                            <span class="detail-value">${duration.toFixed(4)}s</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Progress:</span>
+                            <div class="timing-bar">
+                                <div class="timing-bar-fill ${statusClass}" style="width: ${Math.min((duration / (le || 5)) * 100, 100)}%"></div>
+                            </div>
+                        </div>
+                        ${this.generateResponseHeaders(requestDetails)}
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>
+                            <span class="material-symbols-rounded">monitoring</span>
+                            Performance Metrics
+                        </h3>
+                        <div class="detail-item">
+                            <span class="detail-label">Bucket:</span>
+                            <span class="detail-value">${bucket}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Threshold:</span>
+                            <span class="detail-value">${this.getThresholdIndicator(duration)}</span>
+                        </div>
+                        <div class="performance-indicators">
+                            ${this.generatePerformanceIndicators(duration)}
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>
+                            <span class="material-symbols-rounded">code</span>
+                            Curl Command
+                        </h3>
+                        <div class="curl-command">
+                            <pre><code>${curlCommand}</code></pre>
+                            <button class="copy-button" data-copy="${curlCommand}">
+                                <span class="material-symbols-rounded">content_copy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        `;
+    }
+
+    generateCurlCommand(method, route, requestDetails) {
+        if (!requestDetails || !requestDetails.request) {
+            // Fallback to basic curl command if no details available
+            return `curl --location --request ${method} '${window.location.origin}${route}'`;
+        }
+
+        const req = requestDetails.request;
+        let curlCmd = `curl --location --request ${method} '${req.url}'`;
+
+        // Add all headers from the actual request
+        Object.entries(req.headers || {}).forEach(([key, value]) => {
+            // Skip browser-specific and connection headers
+            const skipHeaders = [
+                'connection',
+                'sec-fetch-site',
+                'sec-fetch-mode',
+                'sec-fetch-dest',
+                'sec-ch-ua',
+                'sec-ch-ua-mobile',
+                'sec-ch-ua-platform',
+                'dnt',
+                'upgrade-insecure-requests'
+            ];
+            
+            if (!skipHeaders.includes(key.toLowerCase())) {
+                // Properly escape single quotes in header values
+                const escapedValue = value.replace(/'/g, "'\\''");
+                curlCmd += ` \\\n  --header '${key}: ${escapedValue}'`;
+            }
+        });
+
+        // Add request body if present
+        if (req.body) {
+            let bodyStr;
+            if (typeof req.body === 'string') {
+                try {
+                    // Try to parse and re-stringify to format JSON
+                    const parsed = JSON.parse(req.body);
+                    bodyStr = JSON.stringify(parsed, null, 2);
+                } catch {
+                    // If not JSON, use as is
+                    bodyStr = req.body;
+                }
+            } else {
+                // If object, stringify with formatting
+                bodyStr = JSON.stringify(req.body, null, 2);
+            }
+            
+            // Properly escape single quotes in the body
+            const escapedBody = bodyStr.replace(/'/g, "'\\''");
+            
+            // Use --data for POST/PUT/PATCH, --data-raw for preserving exact string
+            const contentType = (req.headers || {})['content-type'] || '';
+            if (contentType.includes('application/json')) {
+                curlCmd += ` \\\n  --header 'Content-Type: application/json' \\\n  --data '${escapedBody}'`;
+            } else if (contentType.includes('application/x-www-form-urlencoded')) {
+                curlCmd += ` \\\n  --data-urlencode '${escapedBody}'`;
+            } else {
+                curlCmd += ` \\\n  --data-raw '${escapedBody}'`;
+            }
+        }
+
+        return curlCmd;
+    }
+
+    generateHeadersList(details) {
+        if (!details || !details.request || !details.request.headers) {
+            return '';
+        }
+
+        const headers = details.request.headers;
+        return `
+            <div class="detail-item">
+                <span class="detail-label">Headers:</span>
+                <div class="headers-list">
+                    ${Object.entries(headers)
+                        .filter(([key]) => !['connection', 'sec-fetch-site', 'sec-fetch-mode', 'sec-fetch-dest'].includes(key.toLowerCase()))
+                        .map(([key, value]) => `
+                            <div class="header-item">
+                                <span class="header-name">${key}:</span>
+                                <span class="header-value">${value}</span>
+                                <button class="copy-button" data-copy="${value}">
+                                    <span class="material-symbols-rounded">content_copy</span>
+                                </button>
+                            </div>
+                        `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    generateResponseHeaders(details) {
+        if (!details || !details.response || !details.response.headers) {
+            return '';
+        }
+
+        return `
+            <div class="detail-item">
+                <span class="detail-label">Response Headers:</span>
+                <div class="headers-list">
+                    ${Object.entries(details.response.headers)
+                        .map(([key, value]) => `
+                            <div class="header-item">
+                                <span class="header-name">${key}:</span>
+                                <span class="header-value">${value}</span>
+                            </div>
+                        `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    getStatusInfo(statusCode) {
+        const code = parseInt(statusCode);
+        if (code >= 500) {
+            return {
+                message: 'Server Error',
+                icon: 'error'
+            };
+        } else if (code >= 400) {
+            return {
+                message: 'Client Error',
+                icon: 'warning'
+            };
+        } else if (code >= 300) {
+            return {
+                message: 'Redirect',
+                icon: 'directions'
+            };
+        } else if (code >= 200) {
+            return {
+                message: 'Success',
+                icon: 'check_circle'
+            };
+        }
+        return {
+            message: 'Unknown',
+            icon: 'help'
+        };
+    }
+
+    getThresholdIndicator(duration) {
+        if (duration <= 0.1) {
+            return '<span class="performance-good">Excellent</span>';
+        } else if (duration <= 0.3) {
+            return '<span class="performance-ok">Good</span>';
+        } else if (duration <= 1.0) {
+            return '<span class="performance-warning">Fair</span>';
+        } else {
+            return '<span class="performance-poor">Poor</span>';
+        }
+    }
+
+    generatePerformanceIndicators(duration) {
+        const thresholds = [
+            { limit: 0.1, label: '100ms', class: 'performance-good' },
+            { limit: 0.3, label: '300ms', class: 'performance-ok' },
+            { limit: 1.0, label: '1s', class: 'performance-warning' },
+            { limit: Infinity, label: '>1s', class: 'performance-poor' }
+        ];
+
+        return `
+            <div class="performance-bars">
+                ${thresholds.map(threshold => `
+                    <div class="performance-bar-item ${threshold.class} ${duration <= threshold.limit ? 'active' : ''}">
+                        <span class="performance-label">${threshold.label}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
     showTab(route) {
         this.currentTab = route;
         document.querySelectorAll('.tab-content').forEach(content => {
@@ -46,6 +399,10 @@ class MetricsDashboard {
         if (this.loading) return;
         
         this.showLoading();
+        const refreshButton = document.querySelector('.refresh-button');
+        if (refreshButton) {
+            refreshButton.classList.add('refreshing');
+        }
         
         try {
             const response = await fetch('/metrics', {
@@ -58,13 +415,25 @@ class MetricsDashboard {
                 throw new Error('Failed to fetch metrics');
             }
 
-            const metrics = await response.json();
-            this.updateDashboard(metrics);
+            const data = await response.json();
+            this.updateDashboard(data);
+            this.lastRefreshTime = new Date();
+            this.updateLastRefreshTime();
         } catch (error) {
             console.error('Error refreshing metrics:', error);
             this.showError('Failed to refresh metrics');
         } finally {
             this.hideLoading();
+            if (refreshButton) {
+                refreshButton.classList.remove('refreshing');
+            }
+        }
+    }
+
+    updateLastRefreshTime() {
+        const timeElement = document.querySelector('.last-refresh-time');
+        if (timeElement && this.lastRefreshTime) {
+            timeElement.textContent = `Last updated: ${this.lastRefreshTime.toLocaleTimeString()}`;
         }
     }
 
@@ -85,16 +454,38 @@ class MetricsDashboard {
     }
 
     showError(message) {
-        // TODO: Implement error notification
-        console.error(message);
+        const errorEl = document.createElement('div');
+        errorEl.className = 'error-notification';
+        errorEl.textContent = message;
+        document.body.appendChild(errorEl);
+        
+        setTimeout(() => {
+            errorEl.remove();
+        }, 5000);
     }
 
-    updateDashboard(metrics) {
-        // Update metrics for each tab
-        Object.entries(metrics).forEach(([metricName, metricData]) => {
-            const metricElement = document.querySelector(`[data-metric="${metricName}"]`);
+    updateDashboard(data) {
+        // Update all metrics view
+        data.metrics.forEach(metric => {
+            const metricElement = document.querySelector(`[data-metric="${metric.name}"]`);
             if (metricElement) {
-                this.updateMetricGroup(metricElement, metricData);
+                this.updateMetricGroup(metricElement, metric);
+            }
+        });
+
+        // Update route-specific views
+        data.routes.forEach(route => {
+            const routeContent = document.getElementById(`content-${route.route}`);
+            if (routeContent) {
+                route.metrics.forEach(metric => {
+                    const metricElement = routeContent.querySelector(`[data-metric="${metric.name}"]`);
+                    if (metricElement) {
+                        this.updateMetricGroup(metricElement, {
+                            ...metric,
+                            metrics: metric.routeMetrics
+                        });
+                    }
+                });
             }
         });
     }
@@ -103,20 +494,31 @@ class MetricsDashboard {
         const tableBody = element.querySelector('tbody');
         if (!tableBody) return;
 
-        tableBody.innerHTML = this.generateMetricRows(data.metrics);
+        if (!data.hasMetrics && !data.hasRouteMetrics) {
+            element.querySelector('.no-data')?.classList.remove('hidden');
+            tableBody.innerHTML = '';
+            return;
+        }
+
+        element.querySelector('.no-data')?.classList.add('hidden');
+        tableBody.innerHTML = this.generateMetricRows(data.metrics || []);
     }
 
     generateMetricRows(metrics) {
         return metrics.map(metric => {
             const statusCode = metric.labels.find(l => l.key === 'status_code')?.value;
             const statusClass = this.getStatusClass(statusCode);
+            const method = metric.labels.find(l => l.key === 'method')?.value;
+            const route = metric.labels.find(l => l.key === 'route')?.value;
             
             return `
-                <tr>
+                <tr class="metric-row">
                     <td>
                         ${this.generateLabelPairs(metric.labels)}
                     </td>
-                    <td class="metric-value ${statusClass}">${metric.value.toFixed(4)}</td>
+                    <td class="metric-value ${statusClass}">
+                        ${metric.formattedValue || metric.value.toFixed(4)}
+                    </td>
                 </tr>
             `;
         }).join('');

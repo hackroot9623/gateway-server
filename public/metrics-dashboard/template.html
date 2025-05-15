@@ -28,7 +28,7 @@
         <div class="metric-group" data-metric="{{name}}">
             <div class="metric-name">{{name}}</div>
             <div class="metric-help">{{help}}</div>
-            <div class="metric-type">{{type}}</div>
+            <div class="metric-type">Type: {{type}}</div>
             {{#hasMetrics}}
             <table>
                 <thead>
@@ -39,7 +39,7 @@
                 </thead>
                 <tbody>
                     {{#metrics}}
-                    <tr>
+                    <tr class="metric-row">
                         <td>
                             {{#labels}}
                             <span class="label-pair">
@@ -68,7 +68,7 @@
         <div class="metric-group" data-metric="{{name}}">
             <div class="metric-name">{{name}}</div>
             <div class="metric-help">{{help}}</div>
-            <div class="metric-type">{{type}}</div>
+            <div class="metric-type">Type: {{type}}</div>
             {{#hasRouteMetrics}}
             <table>
                 <thead>
@@ -79,7 +79,7 @@
                 </thead>
                 <tbody>
                     {{#routeMetrics}}
-                    <tr>
+                    <tr class="metric-row">
                         <td>
                             {{#labels}}
                             <span class="label-pair">

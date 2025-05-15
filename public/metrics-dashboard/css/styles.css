@@ -288,4 +288,368 @@ tr:hover {
         transform: translateX(0);
         opacity: 1;
     }
+}
+
+.metric-row {
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.metric-row:hover {
+    background: #f8f9fa;
+}
+
+.metric-row.expanded {
+    background: #f8f9fa;
+    border-bottom: none !important;
+}
+
+.metric-row::after {
+    content: 'expand_more';
+    font-family: 'Material Symbols Rounded';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #95a5a6;
+    transition: transform 0.3s;
+}
+
+.metric-row.expanded::after {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.request-details {
+    display: none;
+    background: #f8f9fa;
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.3s ease-out;
+}
+
+.request-details.visible {
+    display: table-row;
+    opacity: 1;
+    animation: slideDown 0.3s ease-out;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    background: white;
+    margin: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.detail-section {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 15px;
+}
+
+.detail-section h3 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 1.1em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.detail-section h3 .material-symbols-rounded {
+    font-size: 1.2em;
+    color: #3498db;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    gap: 10px;
+}
+
+.detail-label {
+    color: #666;
+    min-width: 100px;
+    font-weight: 500;
+}
+
+.detail-value {
+    color: #2c3e50;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    flex: 1;
+}
+
+.timing-bar {
+    height: 4px;
+    background: #eee;
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+    flex: 1;
+}
+
+.timing-bar-fill {
+    height: 100%;
+    background: #3498db;
+    border-radius: 2px;
+    transition: width 0.3s ease-out;
+}
+
+.copy-button {
+    padding: 4px 8px;
+    background: #f0f2f5;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    color: #666;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copy-button:hover {
+    background: #e8e8e8;
+    color: #2980b9;
+}
+
+.copy-button .material-symbols-rounded {
+    font-size: 1.2em;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.detail-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 10px;
+}
+
+.detail-tab {
+    padding: 6px 12px;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    color: #666;
+    transition: all 0.2s;
+}
+
+.detail-tab:hover {
+    background: #e8e8e8;
+    color: #2980b9;
+}
+
+.detail-tab.active {
+    background: #3498db;
+    color: white;
+}
+
+.detail-content {
+    display: none;
+}
+
+.detail-content.active {
+    display: block;
+}
+
+.service-name {
+    font-weight: 500;
+    color: #3498db;
+    text-transform: capitalize;
+}
+
+.endpoint-path {
+    font-family: 'SF Mono', 'Consolas', monospace;
+    color: #2c3e50;
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    background: #f8f9fa;
+}
+
+.status-indicator.status-2xx {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status-indicator.status-3xx {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.status-indicator.status-4xx {
+    background: #fbe9e7;
+    color: #c62828;
+}
+
+.status-indicator.status-5xx {
+    background: #ffebee;
+    color: #b71c1c;
+}
+
+.status-code {
+    font-weight: 600;
+}
+
+.status-text {
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.timing-bar-fill.status-2xx { background: #4caf50; }
+.timing-bar-fill.status-3xx { background: #ff9800; }
+.timing-bar-fill.status-4xx { background: #f44336; }
+.timing-bar-fill.status-5xx { background: #d32f2f; }
+
+.performance-indicators {
+    margin-top: 15px;
+}
+
+.performance-bars {
+    display: flex;
+    gap: 2px;
+    margin-top: 8px;
+}
+
+.performance-bar-item {
+    flex: 1;
+    padding: 6px;
+    text-align: center;
+    font-size: 0.8em;
+    border-radius: 4px;
+    opacity: 0.5;
+    transition: all 0.2s;
+}
+
+.performance-bar-item.active {
+    opacity: 1;
+}
+
+.performance-good {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.performance-ok {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.performance-warning {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.performance-poor {
+    background: #ffebee;
+    color: #b71c1c;
+}
+
+.detail-section {
+    position: relative;
+}
+
+.detail-section::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 2px;
+}
+
+.detail-section:nth-child(1)::before { background: #3498db; }
+.detail-section:nth-child(2)::before { background: #2ecc71; }
+.detail-section:nth-child(3)::before { background: #9b59b6; }
+
+.headers-list {
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 8px;
+    margin-top: 4px;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 0.9em;
+}
+
+.header-item {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.header-item:last-child {
+    margin-bottom: 0;
+}
+
+.header-name {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.header-value {
+    color: #3498db;
+}
+
+.curl-command {
+    position: relative;
+    background: #2c3e50;
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 10px;
+}
+
+.curl-command pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: #ecf0f1;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.curl-command code {
+    display: block;
+}
+
+.curl-command .copy-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ecf0f1;
+}
+
+.curl-command .copy-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
 } 
