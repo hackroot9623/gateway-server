@@ -7,6 +7,13 @@
 
 A high-performance API Gateway for microservices architecture built on [fast-gateway](https://www.npmjs.com/package/fast-gateway).
 
+> ## ⚠️ **DISCLAIMER**
+> **This tool is intended for development and local testing purposes only.**
+>
+> 🚫 **Do NOT use this in production environments.**
+>
+> Use this gateway solely to test integrations with APIs and/or the frontend during development.
+
 ## Features
 
 - **High Performance**: Built on fast-gateway for efficient request routing
@@ -17,7 +24,7 @@ A high-performance API Gateway for microservices architecture built on [fast-gat
   - Prometheus metrics for observability
   - Health check endpoints for service monitoring
 - **Logging**: Detailed request/response logging with color coding
-- **Environment-based Configuration**: Different settings for development, testing, and production
+- **Environment-based Configuration**: Different settings for development and testing
 
 ## Architecture
 
