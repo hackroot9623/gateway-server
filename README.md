@@ -102,6 +102,9 @@ The gateway implements the circuit breaker pattern to prevent cascading failures
 ### Prometheus Metrics
 Metrics are exposed at `/metrics` for monitoring with Prometheus.
 
+![image](https://github.com/user-attachments/assets/cc2fb5c2-d13c-4d24-83a2-9739807f817e)
+
+
 ### Health Checks
 The gateway provides health check endpoints for each service and a global health check at `/health`.
 
