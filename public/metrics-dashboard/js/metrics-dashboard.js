@@ -240,14 +240,18 @@ class MetricsDashboard {
                     const parsed = JSON.parse(req.body);
                     bodyStr = JSON.stringify(parsed, null, 2);
                 } catch {
+                    // If not JSON, use as is
                     bodyStr = req.body;
                 }
             } else {
+                // If object, stringify with formatting
                 bodyStr = JSON.stringify(req.body, null, 2);
             }
 
+            // Properly escape single quotes in the body
             const escapedBody = bodyStr.replace(/'/g, "'\\''");
 
+            // Use --data for POST/PUT/PATCH, --data-raw for preserving exact string
             const contentType = req.headers?.['content-type'] || '';
             if (contentType.includes('application/json')) {
                 curlCmd += ` \\\n  --header 'Content-Type: application/json' \\\n  --data '${escapedBody}'`;

@@ -9,8 +9,20 @@ body {
 
 h1 {
     color: #2c3e50;
-    border-bottom: 2px solid #3498db;
-    padding-bottom: 10px;
+    font-size: 1.8em;
+    margin: 0;
+    padding: 0;
+}
+
+.dashboard-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.dashboard-header .icon {
+    vertical-align: middle;
 }
 
 .metric-group {
@@ -213,6 +225,8 @@ tr:hover {
 .refresh-button .icon {
     font-size: 1.2em;
     transition: transform 0.5s;
+    display: flex;
+    align-items: center;
 }
 
 .refresh-button:hover .icon {
@@ -652,4 +666,15 @@ tr:hover {
 .curl-command .copy-button:hover {
     background: rgba(255, 255, 255, 0.2);
     color: #fff;
-} 
+}
+
+.icon {
+    width: 24px; /* Adjust size as needed */
+    height: 24px; /* Adjust size as needed */
+    vertical-align: middle; /* Align with text */
+}
+
+.tab-icon {
+    width: 16px; /* Adjust size as needed */
+    height: 16px; /* Adjust size as needed */
+}

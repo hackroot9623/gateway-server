@@ -10,6 +10,7 @@ try {
     const path = require('path')
     const fs = require('fs')
     const MetricsHandler = require('../lib/metrics/handler')
+    const express = require('express')
 
     // Configure colors theme
     colors.setTheme({
@@ -388,6 +389,9 @@ try {
 
     // Expose Prometheus metrics endpoint
     server.get('/metrics', (req, res) => metricsHandler.handleMetricsRequest(req, res));
+
+    // Serve static files
+    server.use('/metrics-dashboard', express.static(path.join(__dirname, '../public/metrics-dashboard')));
 
     server.start(port)
         .then(() => {
