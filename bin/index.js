@@ -261,8 +261,22 @@ try {
             },
             // Prometheus metrics middleware
             (req, res, next) => {
+                // Skip metrics for internal paths and browser-specific requests
+                if (req.url.startsWith('/metrics') ||
+                    req.url.startsWith('/metrics-dashboard') ||
+                    req.url.startsWith('/.well-known') ||
+                    req.url === '/favicon.ico') {
+                    return next();
+                }
+
+                // Only collect metrics for configured service routes
+                const matchingRoute = config.routes.find(route => req.url.startsWith(route.prefix));
+                if (!matchingRoute) {
+                    return next();
+                }
+
                 const start = process.hrtime();
-                const routePrefix = config.routes.find(route => req.url.startsWith(route.prefix))?.prefix || req.url;
+                const routePrefix = matchingRoute.prefix;
 
                 res.on('finish', () => {
                     const duration = process.hrtime(start);
@@ -288,27 +302,33 @@ try {
             },
             // Logging middleware
             (req, res, next) => {
-                const serviceName = config.routes.find(route => req.url.startsWith(route.prefix))?.prefix || 'unknown';
-                const logData = formatLogMessage(req, serviceName);
+                if (req.url.startsWith('/metrics') || req.url.startsWith('/metrics-dashboard')) {
+                    return next();
+                }
 
-                prettyPrintRequest(logData);
+                const matchingRoute = config.routes.find(route => req.url.startsWith(route.prefix));
 
-                const originalEnd = res.end;
-                const startTime = Date.now();
+                if (matchingRoute) {
+                    const logData = formatLogMessage(req, matchingRoute.prefix);
+                    prettyPrintRequest(logData);
 
-                res.end = function(chunk, encoding) {
-                    const responseTime = Date.now() - startTime;
-                    const responseLogData = {
-                        ...logData,
-                        statusCode: res.statusCode,
-                        responseTime: `${responseTime}ms`,
-                        responseSize: res.getHeader('content-length') || (chunk ? chunk.length : 0),
-                        responseType: res.getHeader('content-type')
+                    const originalEnd = res.end;
+                    const startTime = Date.now();
+
+                    res.end = function(chunk, encoding) {
+                        const responseTime = Date.now() - startTime;
+                        const responseLogData = {
+                            ...logData,
+                            statusCode: res.statusCode,
+                            responseTime: `${responseTime}ms`,
+                            responseSize: res.getHeader('content-length') || (chunk ? chunk.length : 0),
+                            responseType: res.getHeader('content-type')
+                        };
+
+                        prettyPrintResponse(responseLogData);
+                        return originalEnd.apply(this, arguments);
                     };
-
-                    prettyPrintResponse(responseLogData);
-                    return originalEnd.apply(this, arguments);
-                };
+                }
 
                 next();
             },
@@ -317,7 +337,6 @@ try {
             ...route,
             prefixRewrite: route.prefix,
             middlewares: [
-                // Route specific rate limiting if configured
                 route.rateLimit && rateLimit({
                     ...route.rateLimit,
                     trustProxy: true,
@@ -342,14 +361,11 @@ try {
                 }
             ].filter(Boolean)
         })),
-        // Enable proxy trust
         trustProxy: true
     });
 
-    // Initialize metrics handler
     const metricsHandler = new MetricsHandler(prometheus);
 
-    // Add health check endpoint directly
     server.get('/health', async (req, res) => {
         try {
             const checks = await Promise.all(
@@ -380,10 +396,10 @@ try {
                 services: Object.assign({}, ...checks)
             };
 
-            res.json(health);
+            await res.json(health);
         } catch (error) {
             handleServiceError(res, error)
-            res.status(500).json(createErrorResponse(error, req, res));
+            await res.status(500).json(createErrorResponse(error, req, res));
         }
     });
 
