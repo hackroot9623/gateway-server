@@ -2,17 +2,17 @@ class MetricsDashboard {
     constructor() {
         this.currentTab = 'all';
         this.loading = false;
-        this.initializeEventListeners();
+        this.routeRequestCounts = new Map();
         this.lastRefreshTime = null;
+        // Remove initialization from constructor to avoid timing issues
     }
 
     initializeEventListeners() {
-        document.addEventListener('DOMContentLoaded', () => {
-            this.setupTabListeners();
-            this.setupRefreshButton();
-            this.setupRowClickListeners();
-            this.refreshMetrics();
-        });
+        // Initialize only after DOM is ready
+        this.setupTabListeners();
+        this.setupRefreshButton();
+        this.setupRowClickListeners();
+        this.refreshMetrics();
     }
 
     setupTabListeners() {
@@ -27,7 +27,14 @@ class MetricsDashboard {
     setupRefreshButton() {
         const refreshButton = document.querySelector('.refresh-button');
         if (refreshButton) {
-            refreshButton.addEventListener('click', () => this.refreshMetrics());
+            // Remove any existing listeners to prevent duplicates
+            refreshButton.replaceWith(refreshButton.cloneNode(true));
+            const newRefreshButton = document.querySelector('.refresh-button');
+
+            // Add click event listener with bound context
+            newRefreshButton.addEventListener('click', () => {
+                this.refreshMetrics();
+            });
         }
     }
 
@@ -406,6 +413,7 @@ class MetricsDashboard {
             }
 
             const data = await response.json();
+            this.calculateRouteRequestCounts(data);
             this.updateDashboard(data);
             this.lastRefreshTime = new Date();
             this.updateLastRefreshTime();
@@ -416,6 +424,49 @@ class MetricsDashboard {
             this.hideLoading();
             if (refreshButton) {
                 refreshButton.classList.remove('refreshing');
+            }
+        }
+    }
+
+    calculateRouteRequestCounts(data) {
+        this.routeRequestCounts.clear();
+        const totalRequestsMetric = data.metrics.find(m => m.name === 'http_requests_total');
+
+        if (totalRequestsMetric) {
+            if (totalRequestsMetric.metrics) {
+                // Calculate totals for each route
+                totalRequestsMetric.metrics.forEach(metric => {
+                    const route = metric.labels.find(l => l.key === 'route')?.value;
+                    if (route) {
+                        const currentCount = this.routeRequestCounts.get(route) || 0;
+                        this.routeRequestCounts.set(route, currentCount + metric.value);
+                    }
+                });
+
+                // Update the tabs with the counts
+                this.routeRequestCounts.forEach((count, route) => {
+                    const tab = document.getElementById(`tab-${route}`);
+                    if (tab) {
+                        const countSpan = tab.querySelector('.route-count') || document.createElement('span');
+                        countSpan.className = 'route-count';
+                        countSpan.textContent = Math.round(count);
+                        if (!tab.querySelector('.route-count')) {
+                            tab.appendChild(countSpan);
+                        }
+                    }
+                });
+
+                // Calculate and update total for "All Routes" tab
+                const totalCount = Array.from(this.routeRequestCounts.values()).reduce((a, b) => a + b, 0);
+                const allTab = document.getElementById('tab-all');
+                if (allTab) {
+                    const countSpan = allTab.querySelector('.route-count') || document.createElement('span');
+                    countSpan.className = 'route-count';
+                    countSpan.textContent = Math.round(totalCount);
+                    if (!allTab.querySelector('.route-count')) {
+                        allTab.appendChild(countSpan);
+                    }
+                }
             }
         }
     }
@@ -532,5 +583,8 @@ class MetricsDashboard {
     }
 }
 
-// Initialize dashboard
-const dashboard = new MetricsDashboard();
+// Initialize dashboard after DOM is fully loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.dashboard = new MetricsDashboard();
+    window.dashboard.initializeEventListeners();
+});

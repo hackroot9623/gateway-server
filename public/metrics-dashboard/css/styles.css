@@ -360,12 +360,6 @@ tr:hover {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.detail-section {
-    background: #f8f9fa;
-    border-radius: 6px;
-    padding: 15px;
-}
-
 .detail-section h3 {
     margin: 0 0 15px 0;
     color: #2c3e50;
@@ -678,3 +672,23 @@ tr:hover {
     width: 16px; /* Adjust size as needed */
     height: 16px; /* Adjust size as needed */
 }
+
+.route-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #e8f4fd;
+    color: #2980b9;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.8em;
+    margin-left: 8px;
+    min-width: 20px;
+    font-weight: 500;
+}
+
+.tab.active .route-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
