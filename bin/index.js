@@ -6,7 +6,6 @@ try {
     const rateLimit = require('express-rate-limit')
     const CircuitBreaker = require('opossum')
     const prometheus = require('prom-client')
-    const healthCheck = require('@godaddy/terminus')
     const colors = require('colors')
     const path = require('path')
     const fs = require('fs')
@@ -41,7 +40,7 @@ try {
         redirect: (text) => text.cyan,    // 3xx
         clientError: (text) => text.yellow, // 4xx
         serverError: (text) => text.red,  // 5xx
-        unknown: (text) => text.gray      // anything else
+        unavailable: (text) => text.red,    // 503
     };
 
     // Service color mapping for better visualization
@@ -107,10 +106,10 @@ try {
             });
         },
         keyGenerator: (req) => {
-            return req.headers['x-forwarded-for'] ||
-                req.connection.remoteAddress ||
-                req.socket.remoteAddress ||
-                req.ip;
+            return req?.headers['x-forwarded-for'] ||
+                req?.connection.remoteAddress ||
+                req?.socket.remoteAddress ||
+                req?.ip;
         }
     });
 
@@ -173,6 +172,9 @@ try {
         } else if (statusCode >= 300) {
             statusColor = statusColors.redirect;
             statusEmoji = '↪️  ';
+        }else if (statusCode >= 503) {
+            statusColor = statusColors.unavailable;
+            statusEmoji = '❌ ';
         } else {
             statusColor = statusColors.success;
             statusEmoji = '✅ ';
@@ -194,7 +196,7 @@ try {
         console.log(message);
     };
 
-    const createErrorResponse = (error, req, res) => {
+    const createErrorResponse = (error, req, _res) => {
         const errorResponse = {
             error: {
                 message: error.message || 'Internal Server Error',
@@ -209,6 +211,24 @@ try {
 
         return errorResponse;
     };
+
+    function handleServiceError(res, error) {
+        console.error('Service error:', error?.message || error);
+
+        if (res && typeof res?.status === 'function') {
+            metrics.requestTotal.inc({
+                method: 'SERVICE_UNAVAILABLE',
+                route: 'service_error', // Customize this to reflect the service
+                status_code: 503
+            });
+
+            res.status(503).json(createErrorResponse({
+                error: 'Service unavailable. Please try again later.'
+            }));
+        } else {
+            console.warn(statusColors.unavailable('⚠️ This service is not responding or is unavailable'), statusColors.unavailable('503'));
+        }
+    }
 
     const server = gateway({
         middlewares: [
@@ -230,9 +250,9 @@ try {
                             '.js': 'application/javascript',
                             '.html': 'text/html'
                         }[ext] || 'text/plain';
-                        
-                        res.setHeader('Content-Type', contentType);
-                        res.end(data);
+
+                        res?.setHeader('Content-Type', contentType);
+                        res?.end(data);
                     });
                     return;
                 }
@@ -303,10 +323,10 @@ try {
                     standardHeaders: true,
                     legacyHeaders: false,
                     keyGenerator: (req) => {
-                        return req.headers['x-forwarded-for'] ||
-                            req.connection.remoteAddress ||
-                            req.socket.remoteAddress ||
-                            req.ip;
+                        return req?.headers['x-forwarded-for'] ||
+                            req?.connection.remoteAddress ||
+                            req?.socket.remoteAddress ||
+                            req?.ip;
                     }
                 }),
 
@@ -316,14 +336,7 @@ try {
                         await circuitBreakers[route.prefix].fire(req);
                         next();
                     } catch (error) {
-                        if (circuitBreakers[route.prefix].opened) {
-                            res.status(503).json(createErrorResponse({
-                                message: 'Service temporarily unavailable',
-                                code: 'CIRCUIT_OPEN'
-                            }, req, res));
-                        } else {
-                            res.status(500).json(createErrorResponse(error, req, res));
-                        }
+                            handleServiceError(res, error);
                     }
                 }
             ].filter(Boolean)
@@ -343,14 +356,15 @@ try {
                     try {
                         const response = await fetch(`${route.target}${route.healthCheck}`);
                         return {
-                            [route.prefix]: {
+                            [route?.prefix]: {
                                 status: response.ok ? 'up' : 'down',
                                 responseTime: response.headers.get('x-response-time')
                             }
                         };
                     } catch (error) {
+                        handleServiceError(res, error);
                         return {
-                            [route.prefix]: {
+                            [route?.prefix]: {
                                 status: 'down',
                                 error: error.message
                             }
@@ -367,6 +381,7 @@ try {
 
             res.json(health);
         } catch (error) {
+            handleServiceError(res, error)
             res.status(500).json(createErrorResponse(error, req, res));
         }
     });
@@ -375,7 +390,7 @@ try {
     server.get('/metrics', (req, res) => metricsHandler.handleMetricsRequest(req, res));
 
     server.start(port)
-        .then((address) => {
+        .then(() => {
             console.log('\n' + 'STARTED'.success +
                 ` Gateway Server listening on http://127.0.0.1:${port} `.bold + '\n');
 

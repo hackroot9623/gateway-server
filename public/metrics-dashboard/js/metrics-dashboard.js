@@ -58,21 +58,18 @@ class MetricsDashboard {
 
     toggleRowDetails(row) {
         const wasExpanded = row.classList.contains('expanded');
-        
+
         // Close any other open rows
         document.querySelectorAll('.metric-row.expanded').forEach(expandedRow => {
             if (expandedRow !== row) {
                 expandedRow.classList.remove('expanded');
-                const details = expandedRow.nextElementSibling;
-                if (details && details.classList.contains('request-details')) {
-                    details.remove();
-                }
+                expandedRow.nextElementSibling?.classList.contains('request-details') && expandedRow.nextElementSibling.remove();
             }
         });
 
         if (!wasExpanded) {
             row.classList.add('expanded');
-            
+
             // Extract metric data
             const labels = Array.from(row.querySelectorAll('.label-pair')).map(pair => ({
                 key: pair.querySelector('.label-key').textContent,
@@ -85,24 +82,18 @@ class MetricsDashboard {
             const value = row.querySelector('.metric-value').textContent.trim();
             const le = labels.find(l => l.key === 'le')?.value;
 
-            // Create details section
             const details = document.createElement('tr');
             details.className = 'request-details';
             details.innerHTML = this.generateDetailsContent(method, route, statusCode, value, le, labels);
-            
-            // Insert after the clicked row
+
             row.parentNode.insertBefore(details, row.nextSibling);
-            
-            // Add animation class after insertion
+
             requestAnimationFrame(() => {
                 details.classList.add('visible');
             });
         } else {
             row.classList.remove('expanded');
-            const details = row.nextElementSibling;
-            if (details && details.classList.contains('request-details')) {
-                details.remove();
-            }
+            row.nextElementSibling?.classList.contains('request-details') && row.nextElementSibling.remove();
         }
     }
 
@@ -111,13 +102,13 @@ class MetricsDashboard {
         const statusClass = this.getStatusClass(statusCode);
         const duration = parseFloat(value);
         const bucket = le ? `<= ${le}s` : 'Total';
-        
+
         // Extract service name from route
         const serviceName = route.split('/')[1];
-        
+
         // Get request details if available
         const requestDetails = labels.find(l => l.key === 'request_details')?.details;
-        
+
         // Determine status type and message
         const statusInfo = this.getStatusInfo(statusCode);
 
@@ -211,8 +202,7 @@ class MetricsDashboard {
     }
 
     generateCurlCommand(method, route, requestDetails) {
-        if (!requestDetails || !requestDetails.request) {
-            // Fallback to basic curl command if no details available
+        if (!requestDetails?.request) {
             return `curl --location --request ${method} '${window.location.origin}${route}'`;
         }
 
@@ -233,7 +223,7 @@ class MetricsDashboard {
                 'dnt',
                 'upgrade-insecure-requests'
             ];
-            
+
             if (!skipHeaders.includes(key.toLowerCase())) {
                 // Properly escape single quotes in header values
                 const escapedValue = value.replace(/'/g, "'\\''");
@@ -250,19 +240,15 @@ class MetricsDashboard {
                     const parsed = JSON.parse(req.body);
                     bodyStr = JSON.stringify(parsed, null, 2);
                 } catch {
-                    // If not JSON, use as is
                     bodyStr = req.body;
                 }
             } else {
-                // If object, stringify with formatting
                 bodyStr = JSON.stringify(req.body, null, 2);
             }
-            
-            // Properly escape single quotes in the body
+
             const escapedBody = bodyStr.replace(/'/g, "'\\''");
-            
-            // Use --data for POST/PUT/PATCH, --data-raw for preserving exact string
-            const contentType = (req.headers || {})['content-type'] || '';
+
+            const contentType = req.headers?.['content-type'] || '';
             if (contentType.includes('application/json')) {
                 curlCmd += ` \\\n  --header 'Content-Type: application/json' \\\n  --data '${escapedBody}'`;
             } else if (contentType.includes('application/x-www-form-urlencoded')) {
@@ -276,7 +262,7 @@ class MetricsDashboard {
     }
 
     generateHeadersList(details) {
-        if (!details || !details.request || !details.request.headers) {
+        if (!details?.request?.headers) {
             return '';
         }
 
@@ -302,7 +288,7 @@ class MetricsDashboard {
     }
 
     generateResponseHeaders(details) {
-        if (!details || !details.response || !details.response.headers) {
+        if (!details?.response?.headers) {
             return '';
         }
 
@@ -390,27 +376,27 @@ class MetricsDashboard {
         document.querySelectorAll('.tab').forEach(tab => {
             tab.classList.remove('active');
         });
-        
+
         document.getElementById(`tab-${route}`).classList.add('active');
         document.getElementById(`content-${route}`).classList.add('active');
     }
 
     async refreshMetrics() {
         if (this.loading) return;
-        
+
         this.showLoading();
         const refreshButton = document.querySelector('.refresh-button');
         if (refreshButton) {
             refreshButton.classList.add('refreshing');
         }
-        
+
         try {
             const response = await fetch('/metrics', {
                 headers: {
                     'Accept': 'application/json'
                 }
             });
-            
+
             if (!response.ok) {
                 throw new Error('Failed to fetch metrics');
             }
@@ -458,7 +444,7 @@ class MetricsDashboard {
         errorEl.className = 'error-notification';
         errorEl.textContent = message;
         document.body.appendChild(errorEl);
-        
+
         setTimeout(() => {
             errorEl.remove();
         }, 5000);
@@ -508,9 +494,7 @@ class MetricsDashboard {
         return metrics.map(metric => {
             const statusCode = metric.labels.find(l => l.key === 'status_code')?.value;
             const statusClass = this.getStatusClass(statusCode);
-            const method = metric.labels.find(l => l.key === 'method')?.value;
-            const route = metric.labels.find(l => l.key === 'route')?.value;
-            
+
             return `
                 <tr class="metric-row">
                     <td>
@@ -545,4 +529,4 @@ class MetricsDashboard {
 }
 
 // Initialize dashboard
-const dashboard = new MetricsDashboard(); 
+const dashboard = new MetricsDashboard();
