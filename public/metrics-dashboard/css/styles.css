@@ -321,7 +321,7 @@ tr:hover {
 
 .metric-row::after {
     content: 'expand_more';
-    font-family: 'Material Symbols Rounded';
+    font-family: 'Material Symbols Rounded', monospace;
     position: absolute;
     right: 10px;
     top: 50%;
@@ -579,10 +579,6 @@ tr:hover {
 .performance-poor {
     background: #ffebee;
     color: #b71c1c;
-}
-
-.detail-section {
-    position: relative;
 }
 
 .detail-section::before {
