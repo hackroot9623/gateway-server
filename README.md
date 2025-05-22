@@ -36,31 +36,59 @@ The gateway server acts as a central entry point for all client requests, routin
 
 ## Installation
 
-### Prerequisites
-- Node.js >= 18.0.0
-- Node Package Manager: yarn
+### As a Global Package
 
-### Setup
-1. Clone the repository:
+1. Install the package globally:
    ```bash
-   git clone https://github.com/navarrortiz/f-gateway-server.git
-   cd f-gateway-server
+   npm install -g gateway-server
    ```
 
-2. Install dependencies:
+2. Create a configuration file (default: `gateway.json`):
    ```bash
-   yarn install
+   cp /usr/local/lib/node_modules/gateway-server/config/default.json gateway.json
    ```
 
-3. Configure environment variables in a `.env` file:
-   ```plaintext
-   NODE_ENV=development
-   PORT=8080
-   CORS_ORIGIN='*'
-   AUTH_SERVICE_URL='http://127.0.0.1:8082'
-   USER_SERVICE_URL='http://127.0.0.1:8083'
-   NOTIFICATION_SERVICE_URL='http://127.0.0.1:8084'
+3. Edit the configuration file to match your services:
+   ```json
+   {
+     "development": {
+       "port": 8080,
+       "routes": [
+         {
+           "prefix": "/ms-auth",
+           "target": "http://127.0.0.1:8082",
+           "timeout": 10000
+         }
+       ]
+     }
+   }
    ```
+
+### Running the Gateway
+
+Start the gateway with your configuration:
+```bash
+# Using default configuration
+gateway-server
+
+# Using custom configuration file
+gateway-server --config path/to/your/config.json
+
+# Using specific environment
+gateway-server --env production
+```
+
+### Environment Variables
+
+The gateway supports the following environment variables:
+- `NODE_ENV`: Environment to use (development, production, etc.)
+- `PORT`: Port number to listen on
+- Service URLs can be overridden through environment variables
+   - `AUTH_SERVICE_URL`
+   - `PROJECT_SERVICE_URL`
+   - `RRHH_SERVICE_URL`
+   - `DWH_SERVICE_URL`
+   - `CRM_SERVICE_URL`
 
 ## Usage
 

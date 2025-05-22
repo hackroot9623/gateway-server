@@ -1,20 +1,23 @@
 {
-  "name": "gateway-server",
-  "version": "1.0.1",
+  "name": "octopus-gateway-server",
+  "version": "1.0.2",
   "description": "Enhanced API Gateway for microservices",
   "main": "bin/index.js",
+  "bin": {
+    "gateway-server": "./bin/index.js"
+  },
   "scripts": {
     "start": "node bin/index.js",
     "dev": "NODE_ENV=development nodemon bin/index.js",
     "test": "jest",
     "lint": "eslint ."
   },
-  "bin": {
-    "gateway-server": "node ./bin/index.js"
+  "config": {
+    "default": "./config/default.json"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/navarrortiz/f-gateway-server.git"
+    "url": "git@github.com:hackroot9623/gateway-server.git"
   },
   "keywords": [
     "node",
@@ -23,21 +26,26 @@
     "api",
     "gateway"
   ],
-  "author": "Antonio Navarro Ortiz <navarrortiz1@gmail.com>",
+  "author": "Hackroot23 <elieser.santiesteban.1996@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/navarrortiz/f-gateway-server/issues"
+    "url": "https://github.com/hackroot9623/gateway-server/issues"
   },
-  "homepage": "https://github.com/navarrortiz/f-gateway-server#readme",
+  "homepage": "https://github.com/hackroot9623/gateway-server#readme",
   "files": [
-    "bin/*.js",
+    "bin/*",
+    "config/*",
+    "lib/*",
+    "public/*",
     "README.md",
     "LICENSE"
   ],
   "engines": {
     "node": ">=18.0.0"
   },
+  "preferGlobal": true,
   "dependencies": {
+    "yargs": "^17.7.2",
     "@godaddy/terminus": "^4.12.1",
     "colors": "^1.4.0",
     "cors": "^2.8.5",
@@ -56,7 +64,7 @@
     "nodemon": "^3.0.2"
   },
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/",
+    "registry": "https://verdaccio-server-production.up.railway.app/",
     "access": "public"
   }
 }
