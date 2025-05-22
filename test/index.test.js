@@ -1,0 +1,169 @@
+const colors = require('colors');
+const yargs = require('yargs');
+const path = require('path');
+const fs = require('fs');
+const dotenv = require('dotenv');
+const MetricsHandler = require('../lib/metrics/handler');
+const prometheus = require('prom-client');
+
+jest.mock('colors', () => {
+    const handler = {
+        get: () => new Proxy(() => '', handler),
+        apply: () => ''
+    };
+    return new Proxy(() => '', handler);
+});
+
+// Set up mock environment
+process.argv = ['node', 'index.js', '--config', path.resolve(__dirname, '../config/default.json'), '--env', 'development'];
+
+// Load environment variables
+dotenv.config();
+
+// Load configuration
+const configPath = path.resolve(process.argv[3]);
+const config = require(configPath)[process.argv[5]];
+
+// Mock required modules
+jest.mock('fast-gateway', () => {
+    return jest.fn(() => ({
+        get: jest.fn(),
+        use: jest.fn(),
+        start: jest.fn().mockResolvedValue(),
+    }));
+});
+jest.mock('cors');
+jest.mock('helmet');
+jest.mock('express-rate-limit');
+jest.mock('opossum');
+jest.mock('prom-client');
+jest.mock('fs');
+jest.mock('dotenv');
+jest.mock('../lib/metrics/handler', () => {
+    return class MockMetricsHandler {
+        constructor() {}
+        handleMetricsRequest() {}
+    };
+});
+
+let mockArgv = {};
+
+beforeEach(() => {
+    jest.clearAllMocks();
+});
+
+describe('Gateway Server Index', () => {
+    it('should load configuration from default path when no config is provided', async () => {
+        jest.resetModules();
+        jest.mock('yargs', () => {
+            let _argv = {};
+            const chain = {
+                option: () => chain,
+                help: () => chain,
+            };
+            Object.defineProperty(chain, 'argv', {
+                get: () => _argv,
+                set: v => { _argv = v; }
+            });
+            return chain;
+        });
+        const fs = require('fs');
+        const mockConfig = {
+            development: {
+                port: 8080,
+                routes: [{ prefix: '/test', target: 'http://localhost:3000' }]
+            }
+        };
+
+        // Set mockArgv to simulate CLI arguments
+        mockArgv = {
+            config: path.resolve(__dirname, '../config/default.json'),
+            env: 'development'
+        };
+        require('yargs').argv = mockArgv;
+
+        jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+        jest.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify(mockConfig));
+
+        process.env.NODE_ENV = 'test';
+        delete require.cache[require.resolve('../bin/index.js')];
+        const index = require('../bin/index.js');
+
+        await index();
+
+        expect(fs.existsSync).toHaveBeenCalledWith(path.resolve(__dirname, '../config/default.json'));
+        expect(fs.readFileSync).toHaveBeenCalledWith(
+            path.resolve(__dirname, '../config/default.json'),
+            'utf8'
+        );
+    });
+
+    it('should throw error when configuration file is not found', async () => {
+        jest.resetModules();
+        jest.mock('yargs', () => {
+            let _argv = {};
+            const chain = {
+                option: () => chain,
+                help: () => chain,
+            };
+            Object.defineProperty(chain, 'argv', {
+                get: () => _argv,
+                set: v => { _argv = v; }
+            });
+            return chain;
+        });
+        const fs = require('fs');
+        // Set mockArgv to simulate CLI arguments
+        mockArgv = {
+            config: '/nonexistent/config.json',
+            env: 'development'
+        };
+        require('yargs').argv = mockArgv;
+
+        jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+        process.env.NODE_ENV = 'test';
+        delete require.cache[require.resolve('../bin/index.js')];
+        const index = require('../bin/index.js');
+        await expect(index()).rejects.toThrow('Configuration file not found');
+    });
+
+    it('should throw error when environment configuration is not found', async () => {
+        jest.resetModules();
+        jest.mock('yargs', () => {
+            let _argv = {};
+            const chain = {
+                option: () => chain,
+                help: () => chain,
+            };
+            Object.defineProperty(chain, 'argv', {
+                get: () => _argv,
+                set: v => { _argv = v; }
+            });
+            return chain;
+        });
+        const fs = require('fs');
+        const mockConfig = {
+            development: {
+                port: 8080,
+                routes: [{ prefix: '/test', target: 'http://localhost:3000' }]
+            }
+        };
+
+        // Set mockArgv to simulate CLI arguments
+        mockArgv = {
+            config: path.resolve(__dirname, '../config/default.json'),
+            env: 'nonexistent'
+        };
+        require('yargs').argv = mockArgv;
+
+        jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+        jest.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify(mockConfig));
+
+        process.env.NODE_ENV = 'test';
+        delete require.cache[require.resolve('../bin/index.js')];
+        const main = require('../bin/index.js');
+
+        await expect(main()).rejects.toThrow('Environment configuration not found: nonexistent');
+    });
+});

@@ -1,0 +1,60 @@
+{
+  "development": {
+    "port": 8080,
+    "corsOptions": {
+      "origin": "*",
+      "exposedHeaders": ["Authorization", "hub_url", "hub_token", "hub_topics"],
+      "credentials": true
+    },
+    "rateLimit": {
+      "windowMs": 900000,
+      "max": 100
+    },
+    "timeout": 30000,
+    "routes": [
+      {
+        "prefix": "/ms-auth",
+        "target": "http://127.0.0.1:8082",
+        "timeout": 10000,
+        "healthCheck": "/health",
+        "rateLimit": {
+          "windowMs": 900000,
+          "max": 50
+        }
+      },
+      {
+        "prefix": "/ms-project",
+        "target": "http://127.0.0.1:8083",
+        "timeout": 20000,
+        "healthCheck": "/health"
+      },
+      {
+        "prefix": "/ms-rrhh",
+        "target": "http://127.0.0.1:8085",
+        "timeout": 20000,
+        "healthCheck": "/health"
+      },
+      {
+        "prefix": "/ms-query-dwh",
+        "target": "http://127.0.0.1:8087",
+        "timeout": 40000,
+        "healthCheck": "/health"
+      },
+      {
+        "prefix": "/ms-crm",
+        "target": "http://127.0.0.1:8089",
+        "timeout": 20000,
+        "healthCheck": "/health"
+      }
+    ],
+    "logging": {
+      "level": "debug",
+      "format": "pretty"
+    },
+    "security": {
+      "enableHelmet": true,
+      "enableRateLimit": true,
+      "trustProxy": true
+    }
+  }
+}

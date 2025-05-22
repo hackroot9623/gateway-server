@@ -701,3 +701,23 @@ tr:hover {
     color: white;
 }
 
+.refresh-button.auto-refresh-toggle {
+    background: #95a5a6;
+    box-shadow: 0 2px 4px rgba(149, 165, 166, 0.2);
+}
+
+.refresh-button.auto-refresh-toggle:hover {
+    background: #7f8c8d;
+    box-shadow: 0 4px 6px rgba(149, 165, 166, 0.3);
+}
+
+.refresh-button.auto-refresh-toggle.active {
+    background: #2ecc71;
+    box-shadow: 0 2px 4px rgba(46, 204, 113, 0.2);
+}
+
+.refresh-button.auto-refresh-toggle.active:hover {
+    background: #27ae60;
+    box-shadow: 0 4px 6px rgba(46, 204, 113, 0.3);
+}
+
