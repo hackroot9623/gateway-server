@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 async function main() {
     try {
         const fs = require('fs');
@@ -480,8 +482,10 @@ async function main() {
     }
 }
 
-if (require.main === module && process.env.NODE_ENV !== 'test') {
-    main();
-}
+// Execute main function and handle errors
+main().catch(error => {
+    console.error('Fatal error:'.error, error.message);
+    process.exit(1);
+});
 
 module.exports = main;
