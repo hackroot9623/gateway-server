@@ -6,13 +6,8 @@ const dotenv = require('dotenv');
 const MetricsHandler = require('../lib/metrics/handler');
 const prometheus = require('prom-client');
 
-jest.mock('colors', () => {
-    const handler = {
-        get: () => new Proxy(() => '', handler),
-        apply: () => ''
-    };
-    return new Proxy(() => '', handler);
-});
+// Removed global jest.mock('colors', ...) to avoid Jest worker crashes.
+// Individual tests might need adjustment if they relied on this specific mock.
 
 // Set up mock environment
 process.argv = ['node', 'index.js', '--config', path.resolve(__dirname, '../config/default.json'), '--env', 'development'];
