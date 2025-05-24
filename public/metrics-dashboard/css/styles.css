@@ -218,6 +218,88 @@ tr:hover {
     box-shadow: 0 4px 6px rgba(46, 204, 113, 0.3);
 }
 
+/* Styling for <details> and <summary> elements */
+.detail-section summary {
+    cursor: pointer;
+    font-weight: 500; /* Similar to .detail-label */
+    padding: 8px 0;
+    display: list-item; /* Ensures disclosure triangle is shown */
+    color: #2c3e50; /* Match section title color */
+    list-style-position: inside; /* Aligns marker better with text */
+}
+
+.detail-section summary:hover {
+    color: #2980b9; /* Highlight on hover */
+}
+
+.detail-section details > div,
+.detail-section details > pre {
+    padding-top: 8px; /* Space between summary and content */
+    margin-bottom: 10px; /* Space below the content before next element */
+    margin-left: 15px; /* Indent content under summary */
+}
+
+/* Styling for <pre><code> blocks in Request/Response Body */
+.detail-section pre {
+    background-color: #f7f7f7; /* Light grey background */
+    color: #333; /* Dark grey text */
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    padding: 10px;
+    overflow-x: auto; /* Enable horizontal scrolling */
+    border-radius: 4px;
+    border: 1px solid #eee;
+    white-space: pre; /* Preserve whitespace and line breaks, use with overflow-x */
+    margin: 0; /* Reset any default margin from pre */
+}
+
+.detail-section pre code {
+    font-family: inherit; /* Inherit font from <pre> */
+    display: block; /* Ensure code takes full width for scrolling */
+    padding: 0; /* Reset padding if any default from 'code' */
+    background: none; /* Reset background if any default from 'code' */
+    color: inherit; /* Inherit color from <pre> */
+}
+
+/* Consistent border colors for new detail sections */
+/* .detail-section has ::before for the colored line */
+/* Original: 1=blue, 2=green, 3=purple */
+.detail-section:nth-child(4)::before { /* Request Body section */
+    background: #e67e22; /* Orange */
+}
+.detail-section:nth-child(5)::before { /* Response Body section */
+    background: #1abc9c; /* Turquoise */
+}
+/* If Curl Command is next, it would be 6th */
+.detail-section:nth-child(6)::before {
+    background: #f1c40f; /* Yellow for Curl */
+}
+
+
+/* Adjustments for .headers-list within details for better spacing if needed */
+.detail-section details .headers-list {
+    margin-top: 8px; /* Add some space above the headers list when inside details */
+    /* Existing .headers-list styling should apply for the content itself */
+    background-color: transparent; /* Remove background if details content is already boxed/colored */
+    padding: 0; /* Reset padding if details content is already boxed/colored */
+    /* margin-left is already handled by details > div */
+}
+
+/* Ensure p tags (like 'No request body.') inside detail-section have consistent styling */
+.detail-section > p { /* Target direct children p tags for messages like "No request body" */
+    font-size: 0.9em;
+    color: #666;
+    padding: 5px 0 5px 10px; /* Add left padding to align with other content */
+    margin: 0; /* Reset margin for p */
+}
+
+/* Styling for summary's disclosure marker (optional, browser-dependent) */
+.detail-section summary::marker {
+    color: #3498db; /* Example: blue marker */
+}
+.detail-section summary::-webkit-details-marker {
+    color: #3498db; /* For Chrome/Safari */
+}
+
 .refresh-button:active {
     transform: translateY(0);
     box-shadow: 0 2px 4px rgba(46, 204, 113, 0.2);

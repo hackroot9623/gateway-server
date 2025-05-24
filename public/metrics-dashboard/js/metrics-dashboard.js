@@ -7,6 +7,7 @@ class MetricsDashboard {
         this.autoRefreshInterval = null;
         this.autoRefreshEnabled = false;
         this.REFRESH_INTERVAL = 5000; // 5 seconds
+        this.HEADER_COLLAPSE_THRESHOLD = 5; // Threshold for collapsing headers
         this.currentMetricsData = null; // Added property to store fetched data
     }
 
@@ -248,6 +249,22 @@ class MetricsDashboard {
 
                     <div class="detail-section">
                         <h3>
+                            <span class="material-symbols-rounded">description</span>
+                            Request Body
+                        </h3>
+                        ${this._generateFormattedBody(requestDetails?.request?.body, requestDetails?.request?.headers, 'Request Body (click to expand)', 'No request body.')}
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>
+                            <span class="material-symbols-rounded">description</span>
+                            Response Body
+                        </h3>
+                        ${this._generateFormattedBody(requestDetails?.response?.body, requestDetails?.response?.headers, 'Response Body (click to expand)', 'No response body.')}
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>
                             <span class="material-symbols-rounded">done_all</span>
                             Response Details
                         </h3>
@@ -375,46 +392,102 @@ class MetricsDashboard {
             return '';
         }
 
-        const headers = details.request.headers;
-        return `
-            <div class="detail-item">
-                <span class="detail-label">Headers:</span>
-                <div class="headers-list">
-                    ${Object.entries(headers)
-                        .filter(([key]) => !['connection', 'sec-fetch-site', 'sec-fetch-mode', 'sec-fetch-dest'].includes(key.toLowerCase()))
-                        .map(([key, value]) => `
-                            <div class="header-item">
-                                <span class="header-name">${key}:</span>
-                                <span class="header-value">${value}</span>
-                                <button class="copy-button" data-copy="${value}">
-                                    <span class="material-symbols-rounded">content_copy</span>
-                                </button>
-                            </div>
-                        `).join('')}
+        const allHeaders = details.request.headers;
+        const filteredHeaders = Object.entries(allHeaders)
+            .filter(([key]) => !['connection', 'sec-fetch-site', 'sec-fetch-mode', 'sec-fetch-dest'].includes(key.toLowerCase()));
+
+        const headerCount = filteredHeaders.length;
+
+        if (headerCount === 0) {
+            return `
+                <div class="detail-item">
+                    <span class="detail-label">Request Headers:</span>
+                    <p>No headers to display.</p>
                 </div>
+            `;
+        }
+
+        const headerItemsHTML = filteredHeaders.map(([key, value]) => `
+            <div class="header-item">
+                <span class="header-name">${key}:</span>
+                <span class="header-value">${value}</span>
+                <button class="copy-button" data-copy="${value}">
+                    <span class="material-symbols-rounded">content_copy</span>
+                </button>
             </div>
-        `;
+        `).join('');
+
+        if (headerCount > this.HEADER_COLLAPSE_THRESHOLD) {
+            return `
+                <div class="detail-item">
+                    <details>
+                        <summary>Request Headers (${headerCount} items) - Click to expand</summary>
+                        <div class="headers-list">
+                            ${headerItemsHTML}
+                        </div>
+                    </details>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="detail-item">
+                    <span class="detail-label">Request Headers:</span>
+                    <div class="headers-list">
+                        ${headerItemsHTML}
+                    </div>
+                </div>
+            `;
+        }
     }
 
     generateResponseHeaders(details) {
         if (!details?.response?.headers) {
             return '';
         }
+        const allHeaders = details.response.headers;
+        const headerEntries = Object.entries(allHeaders);
+        const headerCount = headerEntries.length;
 
-        return `
-            <div class="detail-item">
-                <span class="detail-label">Response Headers:</span>
-                <div class="headers-list">
-                    ${Object.entries(details.response.headers)
-                        .map(([key, value]) => `
-                            <div class="header-item">
-                                <span class="header-name">${key}:</span>
-                                <span class="header-value">${value}</span>
-                            </div>
-                        `).join('')}
+        if (headerCount === 0) {
+            return `
+                <div class="detail-item">
+                    <span class="detail-label">Response Headers:</span>
+                    <p>No headers to display.</p>
                 </div>
+            `;
+        }
+
+        const headerItemsHTML = headerEntries.map(([key, value]) => `
+            <div class="header-item">
+                <span class="header-name">${key}:</span>
+                <span class="header-value">${value}</span>
+                <button class="copy-button" data-copy="${value}">
+                    <span class="material-symbols-rounded">content_copy</span>
+                </button>
             </div>
-        `;
+        `).join('');
+
+        if (headerCount > this.HEADER_COLLAPSE_THRESHOLD) {
+            return `
+                <div class="detail-item">
+                    <details>
+                        <summary>Response Headers (${headerCount} items) - Click to expand</summary>
+                        <div class="headers-list">
+                            ${headerItemsHTML}
+                        </div>
+                    </details>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="detail-item">
+                    <span class="detail-label">Response Headers:</span>
+                    <div class="headers-list">
+                        ${headerItemsHTML}
+                    </div>
+                </div>
+            `;
+        }
     }
 
     getStatusInfo(statusCode) {
@@ -799,6 +872,47 @@ class MetricsDashboard {
         if (statusCode.startsWith('4')) return 'status-4xx';
         if (statusCode.startsWith('5')) return 'status-5xx';
         return '';
+    }
+
+    _generateFormattedBody(body, headers, summaryTitle, emptyMessage) {
+        if (!body || (typeof body === 'string' && body.trim() === '')) {
+            return `<p>${emptyMessage}</p>`;
+        }
+
+        let bodyContent;
+        let isJson = false;
+        const contentType = headers?.['content-type'] || headers?.['Content-Type'] || ''; // Check both common casings
+
+        if (contentType.includes('application/json')) {
+            isJson = true;
+        }
+
+        if (isJson) {
+            try {
+                if (typeof body === 'string') {
+                    bodyContent = JSON.stringify(JSON.parse(body), null, 2);
+                } else {
+                    bodyContent = JSON.stringify(body, null, 2);
+                }
+            } catch (e) {
+                // If JSON parsing fails, treat as plain text
+                bodyContent = typeof body === 'string' ? body : JSON.stringify(body);
+            }
+        } else {
+            bodyContent = typeof body === 'string' ? body : JSON.stringify(body);
+        }
+
+        const formattedBody = `<pre><code>${bodyContent}</code></pre>`;
+
+        if (bodyContent.length > 500) {
+            return `
+                <details>
+                    <summary>${summaryTitle}</summary>
+                    ${formattedBody}
+                </details>
+            `;
+        }
+        return formattedBody;
     }
 }
 
