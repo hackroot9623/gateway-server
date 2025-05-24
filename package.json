@@ -1,6 +1,6 @@
 {
   "name": "octopus-gateway-server",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Enhanced API Gateway for microservices",
   "main": "bin/index.js",
   "bin": {
@@ -64,7 +64,7 @@
     "nodemon": "^3.0.2"
   },
   "publishConfig": {
-    "registry": "https://verdaccio-server-production.up.railway.app/",
+    "registry": "https://registry.npmjs.org/",
     "access": "public"
   }
 }
