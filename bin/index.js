@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+const colors = require('colors'); // Import colors at the VERY top level
+const { validateConfig } = require('../lib/configValidator');
+
 async function main() {
     try {
         const fs = require('fs');
@@ -14,13 +17,39 @@ async function main() {
                 alias: 'c',
                 describe: 'Path to configuration file',
                 type: 'string',
-                default: path.resolve(packageJson.config.default)
+                default: path.resolve(process.cwd(), 'gateway.config.json')
             })
             .option('env', {
                 alias: 'e',
                 describe: 'Environment to use',
                 type: 'string',
                 default: 'development'
+            })
+            .command('init', 'Create a default gateway.config.json file in the current directory', () => {
+                // Try requiring colors specifically for this handler's scope as a workaround
+                const localColors = require('colors');
+                const currentFs = require('fs'); // also ensure fs is fresh if there are scope issues
+                const currentPath = require('path'); // also ensure path is fresh
+
+                const targetFilename = 'gateway.config.json';
+                const targetPath = currentPath.resolve(process.cwd(), targetFilename);
+
+                if (currentFs.existsSync(targetPath)) {
+                    console.error(localColors.red(`Error: ${targetFilename} already exists in the current directory.`));
+                    process.exit(1);
+                }
+
+                const sourcePath = currentPath.join(__dirname, '../config/default.json');
+                try {
+                    const defaultConfigContent = currentFs.readFileSync(sourcePath, 'utf8');
+                    currentFs.writeFileSync(targetPath, defaultConfigContent);
+                    // Use a standard color like green directly, as .success was theme-dependent
+                    console.log(localColors.green(`Successfully created ${targetFilename}. Please customize it to your needs.`));
+                    process.exit(0);
+                } catch (error) {
+                    console.error(localColors.red(`Error creating ${targetFilename}: ${error.message}`));
+                    process.exit(1);
+                }
             })
             .help()
             .argv;
@@ -47,6 +76,9 @@ async function main() {
             throw new Error(`Environment configuration not found: ${argv.env}`);
         }
 
+        // Validate configuration
+        validateConfig(config);
+
         console.log('Starting Gateway Server with configuration:');
         console.log(`Environment: ${argv.env}`);
         console.log(`Configuration file: ${configPath}`);
@@ -60,19 +92,19 @@ async function main() {
         const rateLimit = require('express-rate-limit')
         const CircuitBreaker = require('opossum')
         const prometheus = require('prom-client')
-        const colors = require('colors')
+        const colors = require('colors'); // Import colors
         const MetricsHandler = require('../lib/metrics/handler')
         const express = require('express')
 
-        // Configure colors theme
-        colors.setTheme({
-            error: ['white', 'bgRed'],
-            success: ['black', 'bgGreen'],
-            warn: ['black', 'bgYellow'],
-            info: ['white', 'bgBlue']
-        });
+        // Define custom color themes if still needed (though direct usage like colors.red() is preferred)
+        // colors.setTheme({
+        //     error: ['white', 'bgRed'], // Example: this would be colors.error('text')
+        //     success: ['black', 'bgGreen'], // Example: this would be colors.success('text')
+        //     warn: ['black', 'bgYellow'],
+        //     info: ['white', 'bgBlue']
+        // });
 
-        const port = config.port;
+        const port = process.env.PORT || config.port; // Ensure process.env.PORT takes precedence
         const routes = config.routes.map((route) => ({ prefixRewrite: route.prefix, ...route}));
         const corsOptions = config.corsOptions || {};
 
@@ -187,27 +219,27 @@ async function main() {
         };
 
         const prettyPrintRequest = (logData) => {
-            const methodColor = methodColors[logData.method] || ((text) => text.white);
-            const serviceColor = serviceColors[logData.service] || ((text) => text.white);
+            const methodColor = methodColors[logData.method] || colors.white;
+            const serviceColor = serviceColors[logData.service] || colors.white;
 
             console.log(
-                '➡️  REQUEST'.blue.bold +
-                ` [${logData.timestamp}]`.gray +
-                ` #${logData.requestId} `.white.bold +
-                methodColor(logData.method + ' ').bold +
+                colors.bold(colors.blue('➡️  REQUEST')) +
+                colors.gray(` [${logData.timestamp}]`) +
+                colors.bold(colors.white(` #${logData.requestId} `)) +
+                colors.bold(methodColor(logData.method + ' ')) +
                 serviceColor(logData.service) +
-                logData.url.replace(logData.service, '').white +
-                ` from ${logData.ip}`.gray
+                colors.white(logData.url.replace(logData.service, '')) +
+                colors.gray(` from ${logData.ip}`)
             );
 
             console.log(
-                `   User-Agent: ${logData.userAgent}`.gray +
-                (logData.contentType ? `\n   Content-Type: ${logData.contentType}`.gray : '') +
-                (logData.contentLength ? `\n   Content-Length: ${logData.contentLength} bytes`.gray : '')
+                colors.gray(`   User-Agent: ${logData.userAgent}`) +
+                (logData.contentType ? colors.gray(`\n   Content-Type: ${logData.contentType}`) : '') +
+                (logData.contentLength ? colors.gray(`\n   Content-Length: ${logData.contentLength} bytes`) : '')
             );
 
             if (logData.query && Object.keys(logData.query).length > 0) {
-                console.log(`   Query: ${JSON.stringify(logData.query)}`.gray);
+                console.log(colors.gray(`   Query: ${JSON.stringify(logData.query)}`));
             }
         };
 
@@ -233,18 +265,18 @@ async function main() {
                 statusEmoji = '✅ ';
             }
 
-            const methodColor = methodColors[logData.method] || ((text) => text.white);
-            const serviceColor = serviceColors[logData.service] || ((text) => text.white);
+            const methodColor = methodColors[logData.method] || colors.white;
+            const serviceColor = serviceColors[logData.service] || colors.white;
 
             const message =
-                '⬅️  RESPONSE'.magenta.bold +
-                ` [${logData.timestamp}]`.gray +
-                ` #${logData.requestId} `.white.bold +
-                methodColor(logData.method + ' ').bold +
+                colors.bold(colors.magenta('⬅️  RESPONSE')) +
+                colors.gray(` [${logData.timestamp}]`) +
+                colors.bold(colors.white(` #${logData.requestId} `)) +
+                colors.bold(methodColor(logData.method + ' ')) +
                 serviceColor(logData.service) +
-                logData.url.replace(logData.service, '').white +
-                ' ' + statusColor(`${statusCode} ${statusEmoji}`).bold +
-                ` in ${logData.responseTime}`.gray;
+                colors.white(logData.url.replace(logData.service, '')) +
+                ' ' + colors.bold(statusColor(`${statusCode} ${statusEmoji}`)) +
+                colors.gray(` in ${logData.responseTime}`);
 
             console.log(message);
         };
@@ -279,7 +311,7 @@ async function main() {
                     error: 'Service unavailable. Please try again later.'
                 }));
             } else {
-                console.warn(statusColors.unavailable('⚠️ This service is not responding or is unavailable'), statusColors.unavailable('503'));
+                console.warn(statusColors.unavailable('⚠️ This service is not responding or is unavailable'), statusColors.unavailable('503')); // This still uses prototype style due to statusColors definition
             }
         }
 
@@ -461,30 +493,36 @@ async function main() {
 
         server.start(port)
             .then(() => {
-                console.log('\n' + 'STARTED'.success +
-                    ` Gateway Server listening on http://127.0.0.1:${port} `.bold + '\n');
+                // Using colors.themed approach if themes were kept, or direct colors.colorName()
+                console.log('\n' + colors.green.bold('STARTED') + // Assuming 'success' theme was green and bold
+                    colors.bold(` Gateway Server listening on http://127.0.0.1:${port} `) + '\n');
 
-                console.log('Configured Gateways:'.bold.underline);
+                console.log(colors.bold(colors.underline('Configured Gateways:')));
                 routes.forEach(route => {
-                    const serviceColor = serviceColors[route.prefix] || ((text) => text.white);
-                    console.log(`  ➡️  ${serviceColor(route.prefix)} ${'⟶'.gray} ${route.target.cyan}`);
+                    const serviceColorFunc = serviceColors[route.prefix] || colors.white;
+                    // These still use prototype style due to serviceColors and methodColors definition.
+                    // For full robustness, these would also need to be colors.colorName(string)
+                    console.log(`  ➡️  ${serviceColorFunc(route.prefix)} ${colors.gray('⟶')} ${colors.cyan(route.target)}`);
                 });
                 console.log('');
             })
             .catch(error => {
-                console.error('ERROR'.error +
-                    ` Error starting server: ${error} `.red);
+                // Assuming 'error' theme was white text on red bg
+                console.error(colors.bgRed(colors.white('ERROR')) + colors.red(` Error starting server: ${error} `));
             });
     } catch (error) {
-        console.error('FATAL'.error +
-            ` Initialization error: ${error.message} `.red);
+        // Fallback error logging if colors itself is an issue
+        console.error('FATAL Initialization Error (fallback):', error.message, error.stack);
+        // console.error(colors.bgRed(colors.white('FATAL')) + colors.red(` Initialization error: ${error.message} `));
         throw error; // Re-throw the error to be caught by the test
     }
 }
 
 // Execute main function and handle errors
 main().catch(error => {
-    console.error('Fatal error:'.error, error.message);
+    // Fallback error logging if colors itself is an issue
+    console.error('Fatal Error (fallback):', error.message, error.stack);
+    // console.error(colors.bgRed(colors.white('Fatal error:')), colors.red(error.message));
     process.exit(1);
 });
 

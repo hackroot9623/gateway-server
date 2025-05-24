@@ -61,38 +61,7 @@ const environments = {
   }
 };
 
-// Validation function for configuration
-const validateConfig = (config) => {
-  const requiredFields = ['port', 'corsOptions', 'routes'];
-  
-  requiredFields.forEach(field => {
-    validateField(config, field);
-  });
-
-  if (!Array.isArray(config.routes) || config.routes.length === 0) {
-    throw new Error('Routes configuration must be a non-empty array');
-  }
-
-  config.routes.forEach((route, index) => {
-    validateRoute(route, index);
-  });
-};
-
-const validateField = (config, field) => {
-  if (!config[field]) {
-    throw new Error(`Missing required configuration field: ${field}`);
-  }
-};
-
-const validateRoute = (route, index) => {
-  if (!route.prefix || !route.target) {
-    throw new Error(`Route at index ${index} must have both prefix and target`);
-  }
-};
-
 const environment = process.env.NODE_ENV || 'development';
 const config = environments[environment];
-
-validateConfig(config);
 
 module.exports = config;
