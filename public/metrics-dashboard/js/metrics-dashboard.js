@@ -1,3 +1,30 @@
+/*
+IMPORTANT NOTE ON BACKEND DATA REQUIREMENTS FOR FULL CURL COMMAND FIDELITY:
+
+To ensure the metrics dashboard can display a complete and accurate `curl` command
+that truly replicates the original request, and to show all associated request/response
+data, the backend `/metrics` endpoint MUST provide comprehensive details within
+the `requestDetails` object for each relevant metric item.
+
+This includes:
+- `requestDetails.request.url`: The full, original URL of the request.
+- `requestDetails.request.method`: The original HTTP method.
+- `requestDetails.request.headers`: A complete and unfiltered list/object of ALL
+  original request headers. This MUST include headers often added by browsers
+  (e.g., 'User-Agent', 'Accept-Language', 'Referer', 'Origin', 'Connection',
+  'Sec-Fetch-Site', 'Sec-Fetch-Mode', 'Sec-Fetch-Dest', 'sec-ch-ua', etc.)
+  as well as any custom headers (e.g., 'Authorization', 'x-workspace').
+- `requestDetails.request.body`: The full, raw request body as it was sent.
+- `requestDetails.response.headers`: A complete and unfiltered list/object of all
+  response headers.
+- `requestDetails.response.body`: The full response body.
+
+The accuracy and completeness of the generated `curl` command and the displayed
+request/response data in the UI are entirely dependent on the comprehensiveness
+of the data supplied by the backend via the `/metrics` endpoint.
+If any of these details are missing from the backend, the frontend will not be
+able to fully represent the original transaction.
+*/
 class MetricsDashboard {
     constructor() {
         this.currentTab = 'all';
@@ -334,17 +361,7 @@ class MetricsDashboard {
         // Add all headers from the actual request
         Object.entries(req.headers || {}).forEach(([key, value]) => {
             // Skip browser-specific and connection headers
-            const skipHeaders = [
-                'connection',
-                'sec-fetch-site',
-                'sec-fetch-mode',
-                'sec-fetch-dest',
-                'sec-ch-ua',
-                'sec-ch-ua-mobile',
-                'sec-ch-ua-platform',
-                'dnt',
-                'upgrade-insecure-requests'
-            ];
+            const skipHeaders = []; // All headers will be included
 
             if (!skipHeaders.includes(key.toLowerCase())) {
                 // Properly escape single quotes in header values
@@ -393,10 +410,10 @@ class MetricsDashboard {
         }
 
         const allHeaders = details.request.headers;
-        const filteredHeaders = Object.entries(allHeaders)
-            .filter(([key]) => !['connection', 'sec-fetch-site', 'sec-fetch-mode', 'sec-fetch-dest'].includes(key.toLowerCase()));
+        // Remove the filter and use allHeaders directly for mapping
+        const headerEntries = Object.entries(allHeaders);
 
-        const headerCount = filteredHeaders.length;
+        const headerCount = headerEntries.length;
 
         if (headerCount === 0) {
             return `
@@ -407,7 +424,7 @@ class MetricsDashboard {
             `;
         }
 
-        const headerItemsHTML = filteredHeaders.map(([key, value]) => `
+        const headerItemsHTML = headerEntries.map(([key, value]) => `
             <div class="header-item">
                 <span class="header-name">${key}:</span>
                 <span class="header-value">${value}</span>
